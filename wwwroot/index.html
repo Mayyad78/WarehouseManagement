@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse Management System - Categories</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-warehouse"></i>
+                    <h1>Warehouse Management</h1>
+                </div>
+                <div class="header-actions">
+                    <div class="user-info" id="userInfo" style="display: none;">
+                        <span class="user-name" id="userName"></span>
+                        <span class="user-role" id="userRole"></span>
+                    </div>
+                    <button class="btn btn-primary" id="addCategoryBtn" onclick="showAddCategoryModal()" style="display: none;">
+                        <i class="fas fa-plus"></i>
+                        Add Category
+                    </button>
+                    <button class="btn btn-success" id="addSubCategoryBtn" onclick="showAddSubCategoryModal()" style="display: none;">
+                        <i class="fas fa-plus"></i>
+                        Add SubCategory
+                    </button>
+                    <button class="btn btn-secondary" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Search and Filter Section -->
+            <div class="search-section">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search categories..." onkeyup="filterCategories()">
+                </div>
+                <div class="filter-options">
+                    <select id="statusFilter" onchange="filterCategories()">
+                        <option value="all">All Categories</option>
+                        <option value="active">Active Only</option>
+                        <option value="inactive">Inactive Only</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Categories Grid -->
+            <div class="categories-grid" id="categoriesGrid">
+                <!-- Categories will be loaded here dynamically -->
+            </div>
+
+            <!-- SubCategories Section -->
+            <div class="subcategories-section" id="subcategoriesSection" style="display: none;">
+                <h2>SubCategories</h2>
+                <div class="subcategories-grid" id="subcategoriesGrid">
+                    <!-- SubCategories will be loaded here dynamically -->
+                </div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div class="loading-spinner" id="loadingSpinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading categories...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <i class="fas fa-folder-open"></i>
+                <h3>No categories found</h3>
+                <p>Start by adding your first category to organize your warehouse items.</p>
+                <button class="btn btn-primary" onclick="showAddCategoryModal()">
+                    <i class="fas fa-plus"></i>
+                    Add First Category
+                </button>
+            </div>
+        </main>
+
+        <!-- Add/Edit Category Modal -->
+        <div class="modal" id="categoryModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle">Add New Category</h2>
+                    <button class="close-btn" onclick="closeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="categoryForm" onsubmit="handleSubmit(event)">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="categoryName">Category Name *</label>
+                            <input type="text" id="categoryName" name="name" required maxlength="100" placeholder="Enter category name">
+                            <div class="error-message" id="nameError"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="categoryDescription">Description</label>
+                            <textarea id="categoryDescription" name="description" maxlength="500" placeholder="Enter category description (optional)"></textarea>
+                            <div class="error-message" id="descriptionError"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="categoryActive" name="isActive" checked>
+                                <span class="checkmark"></span>
+                                Active Category
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-save"></i>
+                            Save Category
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add/Edit SubCategory Modal -->
+        <div class="modal" id="subCategoryModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="subCategoryModalTitle">Add New SubCategory</h2>
+                    <button class="close-btn" onclick="closeSubCategoryModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="subCategoryForm" onsubmit="handleSubCategorySubmit(event)">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="subCategoryName">SubCategory Name *</label>
+                            <input type="text" id="subCategoryName" name="name" required maxlength="100" placeholder="Enter subcategory name">
+                            <div class="error-message" id="subCategoryNameError"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="subCategoryDescription">Description</label>
+                            <textarea id="subCategoryDescription" name="description" maxlength="500" placeholder="Enter subcategory description (optional)"></textarea>
+                            <div class="error-message" id="subCategoryDescriptionError"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="subCategoryCategory">Parent Category *</label>
+                            <select id="subCategoryCategory" name="categoryId" required>
+                                <option value="">Select a category</option>
+                            </select>
+                            <div class="error-message" id="subCategoryCategoryError"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="subCategoryActive" name="isActive" checked>
+                                <span class="checkmark"></span>
+                                Active SubCategory
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeSubCategoryModal()">Cancel</button>
+                        <button type="submit" class="btn btn-success" id="subCategorySubmitBtn">
+                            <i class="fas fa-save"></i>
+                            Save SubCategory
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div class="modal" id="deleteModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Delete Category</h2>
+                    <button class="close-btn" onclick="closeDeleteModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="delete-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Are you sure you want to delete this category?</p>
+                        <p class="category-name" id="deleteCategoryName"></p>
+                        <p class="warning-text">This action cannot be undone.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmDelete()">
+                        <i class="fas fa-trash"></i>
+                        Delete Category
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div class="toast-container" id="toastContainer"></div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
