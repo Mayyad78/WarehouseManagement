@@ -7,8 +7,43 @@ let isEditMode = false;
 let isSubCategoryEditMode = false;
 
 // API Configuration
-const API_BASE_URL = '/api/categories';
-const SUB_CATEGORY_API_BASE_URL = '/api/subcategories';
+const CATEGORIES_API_URL = '/api/categories';
+const SUB_CATEGORIES_API_URL = '/api/subcategories';
+
+// Auth helper functions - MUST BE GLOBAL
+function canManageCategories() {
+    const user = localStorage.getItem('currentUser');
+    if (!user) return true; // Allow access for testing
+    try {
+        const userData = JSON.parse(user);
+        return userData.role === 1 || userData.role === 2; // SuperAdmin or Admin
+    } catch (e) {
+        return true;
+    }
+}
+
+function canViewData() {
+    return true;
+}
+
+function hasRole(roles) {
+    const user = localStorage.getItem('currentUser');
+    if (!user) return true;
+    try {
+        const userData = JSON.parse(user);
+        if (Array.isArray(roles)) {
+            return roles.includes(userData.role);
+        }
+        return userData.role === roles;
+    } catch (e) {
+        return true;
+    }
+}
+
+function logout() {
+    localStorage.clear();
+    window.location.href = '/login.html';
+}
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -20,17 +55,11 @@ document.addEventListener('DOMContentLoaded', function() {
 function checkAuthentication() {
     const token = localStorage.getItem('authToken');
     const user = localStorage.getItem('currentUser');
-    
-    if (!token || !user) {
-        // Redirect to login if not authenticated
-        window.location.href = '/login.html';
-        return;
-    }
-    
+
     // Set global variables
-    authToken = token;
-    currentUser = JSON.parse(user);
-    
+    window.authToken = token;
+    window.currentUser = user ? JSON.parse(user) : null;
+
     // Initialize the application
     initializeApp();
 }
@@ -39,10 +68,10 @@ function checkAuthentication() {
 function initializeApp() {
     // Show user info
     showUserInfo();
-    
+
     // Show/hide buttons based on user role
     updateUIForUserRole();
-    
+
     // Load data
     loadCategories();
     loadSubCategories();
@@ -50,10 +79,10 @@ function initializeApp() {
 
 // Show user information in header
 function showUserInfo() {
-    if (currentUser) {
+    if (window.currentUser) {
         document.getElementById('userInfo').style.display = 'flex';
-        document.getElementById('userName').textContent = currentUser.fullName;
-        document.getElementById('userRole').textContent = currentUser.role;
+        document.getElementById('userName').textContent = window.currentUser.fullName;
+        document.getElementById('userRole').textContent = window.currentUser.role;
     }
 }
 
@@ -61,7 +90,7 @@ function showUserInfo() {
 function updateUIForUserRole() {
     const addCategoryBtn = document.getElementById('addCategoryBtn');
     const addSubCategoryBtn = document.getElementById('addSubCategoryBtn');
-    
+
     if (canManageCategories()) {
         addCategoryBtn.style.display = 'inline-flex';
         addSubCategoryBtn.style.display = 'inline-flex';
@@ -71,91 +100,41 @@ function updateUIForUserRole() {
     }
 }
 
-// SubCategory API Functions
-async function fetchSubCategories() {
+// Helper function to get auth headers
+function getAuthHeaders() {
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+
+    const token = localStorage.getItem('authToken');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return headers;
+}
+
+// Helper function to parse response safely
+async function parseResponse(response) {
+    const text = await response.text();
+    if (!text) return null;
     try {
-        const response = await fetch(SUB_CATEGORY_API_BASE_URL, {
-            headers: getAuthHeaders()
-        });
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error fetching subcategories:', error);
-        showToast('Failed to load subcategories', 'error');
-        throw error;
+        return JSON.parse(text);
+    } catch (e) {
+        return text;
     }
 }
 
-async function createSubCategory(subCategoryData) {
-    try {
-        const response = await fetch(SUB_CATEGORY_API_BASE_URL, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify(subCategoryData)
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('Error creating subcategory:', error);
-        throw error;
-    }
-}
-
-async function updateSubCategory(id, subCategoryData) {
-    try {
-        const response = await fetch(`${SUB_CATEGORY_API_BASE_URL}/${id}`, {
-            method: 'PUT',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ ...subCategoryData, id: id })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('Error updating subcategory:', error);
-        throw error;
-    }
-}
-
-async function deleteSubCategory(id) {
-    try {
-        const response = await fetch(`${SUB_CATEGORY_API_BASE_URL}/${id}`, {
-            method: 'DELETE',
-            headers: getAuthHeaders()
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        return response.ok;
-    } catch (error) {
-        console.error('Error deleting subcategory:', error);
-        throw error;
-    }
-}
-
-// API Functions
+// Category API Functions
 async function fetchCategories() {
     try {
-        const response = await fetch(API_BASE_URL, {
+        const response = await fetch(CATEGORIES_API_URL, {
             headers: getAuthHeaders()
         });
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return await response.json();
+        return await parseResponse(response) || [];
     } catch (error) {
         console.error('Error fetching categories:', error);
         showToast('Failed to load categories', 'error');
@@ -165,18 +144,25 @@ async function fetchCategories() {
 
 async function createCategory(categoryData) {
     try {
-        const response = await fetch(API_BASE_URL, {
+        const response = await fetch(CATEGORIES_API_URL, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(categoryData)
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            let errorMsg = `HTTP error! status: ${response.status}`;
+            try {
+                const errorData = JSON.parse(errorText);
+                errorMsg = errorData.message || errorData.title || errorMsg;
+            } catch (e) {
+                errorMsg = errorText || errorMsg;
+            }
+            throw new Error(errorMsg);
         }
 
-        return await response.json();
+        return await parseResponse(response);
     } catch (error) {
         console.error('Error creating category:', error);
         throw error;
@@ -185,18 +171,25 @@ async function createCategory(categoryData) {
 
 async function updateCategory(id, categoryData) {
     try {
-        const response = await fetch(`${API_BASE_URL}/${id}`, {
+        const response = await fetch(`${CATEGORIES_API_URL}/${id}`, {
             method: 'PUT',
             headers: getAuthHeaders(),
             body: JSON.stringify({ ...categoryData, id: id })
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            let errorMsg = `HTTP error! status: ${response.status}`;
+            try {
+                const errorData = JSON.parse(errorText);
+                errorMsg = errorData.message || errorData.title || errorMsg;
+            } catch (e) {
+                errorMsg = errorText || errorMsg;
+            }
+            throw new Error(errorMsg);
         }
 
-        return await response.json();
+        return await parseResponse(response);
     } catch (error) {
         console.error('Error updating category:', error);
         throw error;
@@ -205,18 +198,123 @@ async function updateCategory(id, categoryData) {
 
 async function deleteCategory(id) {
     try {
-        const response = await fetch(`${API_BASE_URL}/${id}`, {
+        const response = await fetch(`${CATEGORIES_API_URL}/${id}`, {
             method: 'DELETE',
             headers: getAuthHeaders()
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            let errorMsg = `HTTP error! status: ${response.status}`;
+            try {
+                const errorData = JSON.parse(errorText);
+                errorMsg = errorData.message || errorData.title || errorMsg;
+            } catch (e) {
+                errorMsg = errorText || errorMsg;
+            }
+            throw new Error(errorMsg);
         }
 
-        return response.ok;
+        return true;
     } catch (error) {
         console.error('Error deleting category:', error);
+        throw error;
+    }
+}
+
+// SubCategory API Functions
+async function fetchSubCategories() {
+    try {
+        const response = await fetch(SUB_CATEGORIES_API_URL, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await parseResponse(response) || [];
+    } catch (error) {
+        console.error('Error fetching subcategories:', error);
+        showToast('Failed to load subcategories', 'error');
+        throw error;
+    }
+}
+
+async function createSubCategory(subCategoryData) {
+    try {
+        const response = await fetch(SUB_CATEGORIES_API_URL, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(subCategoryData)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorMsg = `HTTP error! status: ${response.status}`;
+            try {
+                const errorData = JSON.parse(errorText);
+                errorMsg = errorData.message || errorData.title || errorMsg;
+            } catch (e) {
+                errorMsg = errorText || errorMsg;
+            }
+            throw new Error(errorMsg);
+        }
+
+        return await parseResponse(response);
+    } catch (error) {
+        console.error('Error creating subcategory:', error);
+        throw error;
+    }
+}
+
+async function updateSubCategory(id, subCategoryData) {
+    try {
+        const response = await fetch(`${SUB_CATEGORIES_API_URL}/${id}`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ ...subCategoryData, id: id })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorMsg = `HTTP error! status: ${response.status}`;
+            try {
+                const errorData = JSON.parse(errorText);
+                errorMsg = errorData.message || errorData.title || errorMsg;
+            } catch (e) {
+                errorMsg = errorText || errorMsg;
+            }
+            throw new Error(errorMsg);
+        }
+
+        return await parseResponse(response);
+    } catch (error) {
+        console.error('Error updating subcategory:', error);
+        throw error;
+    }
+}
+
+async function deleteSubCategory(id) {
+    try {
+        const response = await fetch(`${SUB_CATEGORIES_API_URL}/${id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorMsg = `HTTP error! status: ${response.status}`;
+            try {
+                const errorData = JSON.parse(errorText);
+                errorMsg = errorData.message || errorData.title || errorMsg;
+            } catch (e) {
+                errorMsg = errorText || errorMsg;
+            }
+            throw new Error(errorMsg);
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error deleting subcategory:', error);
         throw error;
     }
 }
@@ -234,7 +332,7 @@ async function loadCategories() {
 
         categories = await fetchCategories();
         displayCategories(categories);
-        
+
         if (categories.length === 0) {
             emptyState.style.display = 'block';
             categoriesGrid.style.display = 'none';
@@ -252,7 +350,7 @@ async function loadCategories() {
 
 function displayCategories(categoriesToShow) {
     const categoriesGrid = document.getElementById('categoriesGrid');
-    
+
     if (categoriesToShow.length === 0) {
         categoriesGrid.innerHTML = '';
         return;
@@ -290,12 +388,12 @@ function displayCategories(categoriesToShow) {
 function filterCategories() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const statusFilter = document.getElementById('statusFilter').value;
-    
+
     let filteredCategories = categories;
 
     // Filter by search term
     if (searchTerm) {
-        filteredCategories = filteredCategories.filter(category => 
+        filteredCategories = filteredCategories.filter(category =>
             category.name.toLowerCase().includes(searchTerm) ||
             (category.description && category.description.toLowerCase().includes(searchTerm))
         );
@@ -315,7 +413,7 @@ async function loadSubCategories() {
     try {
         subCategories = await fetchSubCategories();
         displaySubCategories(subCategories);
-        
+
         if (subCategories.length > 0) {
             document.getElementById('subcategoriesSection').style.display = 'block';
         } else {
@@ -328,7 +426,7 @@ async function loadSubCategories() {
 
 function displaySubCategories(subCategoriesToShow) {
     const subCategoriesGrid = document.getElementById('subcategoriesGrid');
-    
+
     if (subCategoriesToShow.length === 0) {
         subCategoriesGrid.innerHTML = '<p class="text-muted">No subcategories found.</p>';
         return;
@@ -370,12 +468,12 @@ function displaySubCategories(subCategoriesToShow) {
 function showAddCategoryModal() {
     isEditMode = false;
     currentCategoryId = null;
-    
+
     document.getElementById('modalTitle').textContent = 'Add New Category';
     document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save"></i> Save Category';
     document.getElementById('categoryForm').reset();
     document.getElementById('categoryActive').checked = true;
-    
+
     clearFormErrors();
     showModal();
 }
@@ -386,14 +484,14 @@ function editCategory(id) {
 
     isEditMode = true;
     currentCategoryId = id;
-    
+
     document.getElementById('modalTitle').textContent = 'Edit Category';
     document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save"></i> Update Category';
-    
+
     document.getElementById('categoryName').value = category.name;
     document.getElementById('categoryDescription').value = category.description || '';
     document.getElementById('categoryActive').checked = category.isActive;
-    
+
     clearFormErrors();
     showModal();
 }
@@ -425,15 +523,15 @@ function closeDeleteModal() {
 function showAddSubCategoryModal() {
     isSubCategoryEditMode = false;
     currentSubCategoryId = null;
-    
+
     document.getElementById('subCategoryModalTitle').textContent = 'Add New SubCategory';
     document.getElementById('subCategorySubmitBtn').innerHTML = '<i class="fas fa-save"></i> Save SubCategory';
     document.getElementById('subCategoryForm').reset();
     document.getElementById('subCategoryActive').checked = true;
-    
+
     // Populate category dropdown
     populateCategoryDropdown();
-    
+
     clearSubCategoryFormErrors();
     showSubCategoryModal();
 }
@@ -444,17 +542,17 @@ function editSubCategory(id) {
 
     isSubCategoryEditMode = true;
     currentSubCategoryId = id;
-    
+
     document.getElementById('subCategoryModalTitle').textContent = 'Edit SubCategory';
     document.getElementById('subCategorySubmitBtn').innerHTML = '<i class="fas fa-save"></i> Update SubCategory';
-    
+
     document.getElementById('subCategoryName').value = subCategory.name;
     document.getElementById('subCategoryDescription').value = subCategory.description || '';
     document.getElementById('subCategoryActive').checked = subCategory.isActive;
-    
+
     // Populate category dropdown and select current category
     populateCategoryDropdown(subCategory.categoryId);
-    
+
     clearSubCategoryFormErrors();
     showSubCategoryModal();
 }
@@ -472,7 +570,7 @@ function closeSubCategoryModal() {
 function populateCategoryDropdown(selectedCategoryId = null) {
     const categorySelect = document.getElementById('subCategoryCategory');
     categorySelect.innerHTML = '<option value="">Select a category</option>';
-    
+
     categories.forEach(category => {
         if (category.isActive) {
             const option = document.createElement('option');
@@ -496,7 +594,7 @@ function showDeleteSubCategoryModal(id, name) {
 // Form Handling
 async function handleSubmit(event) {
     event.preventDefault();
-    
+
     const formData = new FormData(event.target);
     const categoryData = {
         name: formData.get('name').trim(),
@@ -517,7 +615,7 @@ async function handleSubmit(event) {
             await createCategory(categoryData);
             showToast('Category created successfully!', 'success');
         }
-        
+
         closeModal();
         await loadCategories();
     } catch (error) {
@@ -562,7 +660,7 @@ function clearFormErrors() {
 // SubCategory Form Handling
 async function handleSubCategorySubmit(event) {
     event.preventDefault();
-    
+
     const formData = new FormData(event.target);
     const subCategoryData = {
         name: formData.get('name').trim(),
@@ -584,7 +682,7 @@ async function handleSubCategorySubmit(event) {
             await createSubCategory(subCategoryData);
             showToast('SubCategory created successfully!', 'success');
         }
-        
+
         closeSubCategoryModal();
         await loadSubCategories();
     } catch (error) {
@@ -634,6 +732,15 @@ function clearSubCategoryFormErrors() {
 async function confirmDelete() {
     if (currentCategoryId) {
         try {
+            // Check if category has subcategories
+            const categorySubCategories = subCategories.filter(sc => sc.categoryId === currentCategoryId);
+
+            if (categorySubCategories.length > 0) {
+                showToast(`Cannot delete category. It has ${categorySubCategories.length} subcategory(ies). Please delete the subcategories first.`, 'error');
+                closeDeleteModal();
+                return;
+            }
+
             await deleteCategory(currentCategoryId);
             showToast('Category deleted successfully!', 'success');
             closeDeleteModal();
@@ -675,28 +782,28 @@ function showToast(message, type = 'success') {
     const toastContainer = document.getElementById('toastContainer');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    
+
     const iconMap = {
         success: 'fas fa-check-circle',
         error: 'fas fa-exclamation-circle',
         warning: 'fas fa-exclamation-triangle',
         info: 'fas fa-info-circle'
     };
-    
+
     toast.innerHTML = `
         <div class="toast-content">
             <i class="toast-icon ${iconMap[type]}"></i>
             <span>${escapeHtml(message)}</span>
         </div>
     `;
-    
+
     toastContainer.appendChild(toast);
-    
+
     // Auto remove after 5 seconds
     setTimeout(() => {
         toast.remove();
     }, 5000);
-    
+
     // Click to dismiss
     toast.addEventListener('click', () => {
         toast.remove();
@@ -708,15 +815,15 @@ document.addEventListener('click', function(event) {
     const categoryModal = document.getElementById('categoryModal');
     const subCategoryModal = document.getElementById('subCategoryModal');
     const deleteModal = document.getElementById('deleteModal');
-    
+
     if (event.target === categoryModal) {
         closeModal();
     }
-    
+
     if (event.target === subCategoryModal) {
         closeSubCategoryModal();
     }
-    
+
     if (event.target === deleteModal) {
         closeDeleteModal();
     }

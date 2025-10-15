@@ -11,8 +11,8 @@ using WarehouseManagement.Data;
 namespace WarehouseManagement.Migrations
 {
     [DbContext(typeof(WarehouseDbContext))]
-    [Migration("20251014184917_UpdateAdminPassword")]
-    partial class UpdateAdminPassword
+    [Migration("20251014221715_UpdateAdminPasswordHash")]
+    partial class UpdateAdminPasswordHash
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -185,7 +185,7 @@ namespace WarehouseManagement.Migrations
                             FirstName = "System",
                             IsActive = true,
                             LastName = "Administrator",
-                            PasswordHash = "$2a$11$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy",
+                            PasswordHash = "$2a$11$ecaCUssCASFj.yKy2ZzAoOeciiL07EHUCBtW77YxBy9pGftP/GDSi",
                             Role = 1,
                             Username = "admin"
                         });

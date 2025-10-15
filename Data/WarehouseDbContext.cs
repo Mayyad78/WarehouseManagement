@@ -96,14 +96,16 @@ namespace WarehouseManagement.Data
                 }
             );
 
-            // Seed default admin user (password: Admin123!)
+            // Seed default admin user
+            // Username: admin
+            // Password: Admin@123
             modelBuilder.Entity<User>().HasData(
                 new User
                 {
                     Id = 1,
                     Username = "admin",
                     Email = "admin@warehouse.com",
-                    PasswordHash = "$2a$11$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy", // Admin123!
+                    PasswordHash = "$2a$11$ecaCUssCASFj.yKy2ZzAoOeciiL07EHUCBtW77YxBy9pGftP/GDSi", // Admin@123
                     FirstName = "System",
                     LastName = "Administrator",
                     Role = UserRole.SuperAdmin,

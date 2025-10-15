@@ -193,7 +193,8 @@
 /Users/ayyad/WarehouseManagement/bin/Debug/net9.0/BCrypt.Net-Next.dll
 /Users/ayyad/WarehouseManagement/bin/Debug/net9.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll
 /Users/ayyad/WarehouseManagement/obj/Debug/net9.0/compressed/aba6k31979-g6a08yvcup.gz
-/Users/ayyad/WarehouseManagement/obj/Debug/net9.0/compressed/gsfk8bk6jy-gyiqtu1alw.gz
-/Users/ayyad/WarehouseManagement/obj/Debug/net9.0/compressed/cnhj2ndwdk-oupvhdid6s.gz
-/Users/ayyad/WarehouseManagement/obj/Debug/net9.0/compressed/p4pcmnyb92-fvfxa2548k.gz
 /Users/ayyad/WarehouseManagement/obj/Debug/net9.0/compressed/yn5slbiesw-vyd97c4bov.gz
+/Users/ayyad/WarehouseManagement/obj/Debug/net9.0/WarehouseManagement.sourcelink.json
+/Users/ayyad/WarehouseManagement/obj/Debug/net9.0/compressed/p4pcmnyb92-fvfxa2548k.gz
+/Users/ayyad/WarehouseManagement/obj/Debug/net9.0/compressed/gsfk8bk6jy-tmz2cz8ys9.gz
+/Users/ayyad/WarehouseManagement/obj/Debug/net9.0/compressed/cnhj2ndwdk-sn5577bfgz.gz
