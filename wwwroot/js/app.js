@@ -56,6 +56,12 @@ function checkAuthentication() {
     const token = localStorage.getItem('authToken');
     const user = localStorage.getItem('currentUser');
 
+    if (!token || !user) {
+        // Redirect to login if not authenticated
+        window.location.href = '/login.html';
+        return;
+    }
+    
     // Set global variables
     window.authToken = token;
     window.currentUser = user ? JSON.parse(user) : null;

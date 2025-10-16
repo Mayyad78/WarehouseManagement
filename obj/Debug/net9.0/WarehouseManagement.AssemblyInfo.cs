@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WarehouseManagement")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+85aa80fb3256f9e68eb1462bc8cd2f7821a31e69")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+df4a355e4c971766d1c4b8703b096b72fdc2c000")]
 [assembly: System.Reflection.AssemblyProductAttribute("WarehouseManagement")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WarehouseManagement")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
