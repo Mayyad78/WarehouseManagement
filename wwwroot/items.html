@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse Management System - Items</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-warehouse"></i>
+                <h1>Warehouse Management</h1>
+            </div>
+            <nav class="nav-menu">
+                <a href="/" class="nav-link">
+                    <i class="fas fa-folder"></i> Categories
+                </a>
+                <a href="/items.html" class="nav-link active">
+                    <i class="fas fa-box"></i> Items
+                </a>
+            </nav>
+            <div class="header-actions">
+                <div class="user-info" id="userInfo" style="display: none;">
+                    <span class="user-name" id="userName"></span>
+                    <span class="user-role" id="userRole"></span>
+                </div>
+                <button class="btn btn-primary" id="addItemBtn" onclick="showAddItemModal()" style="display: none;">
+                    <i class="fas fa-plus"></i>
+                    Add Item
+                </button>
+                <button class="btn btn-secondary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fas fa-box"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalItems">0</h3>
+                    <p>Total Items</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="lowStockCount">0</h3>
+                    <p>Low Stock Items</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon danger">
+                    <i class="fas fa-redo"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="reorderCount">0</h3>
+                    <p>Needs Reorder</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalValue">$0</h3>
+                    <p>Total Inventory Value</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filter Section -->
+        <div class="search-section">
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search items by name, SKU, or barcode..." onkeyup="filterItems()">
+            </div>
+            <div class="filter-options">
+                <select id="categoryFilter" onchange="filterItems()">
+                    <option value="">All Categories</option>
+                </select>
+                <select id="subCategoryFilter" onchange="filterItems()">
+                    <option value="">All SubCategories</option>
+                </select>
+                <select id="statusFilter" onchange="filterItems()">
+                    <option value="all">All Status</option>
+                    <option value="active">Active Only</option>
+                    <option value="inactive">Inactive Only</option>
+                    <option value="lowstock">Low Stock</option>
+                    <option value="reorder">Needs Reorder</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Items Grid -->
+        <div class="items-grid" id="itemsGrid">
+            <!-- Items will be loaded here dynamically -->
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="loading-spinner" id="loadingSpinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading items...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <i class="fas fa-box-open"></i>
+            <h3>No items found</h3>
+            <p>Start by adding your first item to manage your inventory.</p>
+            <button class="btn btn-primary" onclick="showAddItemModal()">
+                <i class="fas fa-plus"></i>
+                Add First Item
+            </button>
+        </div>
+    </main>
+
+    <!-- Add/Edit Item Modal -->
+    <div class="modal modal-large" id="itemModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Item</h2>
+                <button class="close-btn" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="itemForm" onsubmit="handleSubmit(event)">
+                <div class="modal-body">
+                    <div class="form-grid">
+                        <!-- Basic Information -->
+                        <div class="form-section">
+                            <h3>Basic Information</h3>
+                            <div class="form-group">
+                                <label for="itemName">Item Name *</label>
+                                <input type="text" id="itemName" name="name" required maxlength="200">
+                            </div>
+                            <div class="form-group">
+                                <label for="itemSKU">SKU *</label>
+                                <input type="text" id="itemSKU" name="sku" required maxlength="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="itemDescription">Description</label>
+                                <textarea id="itemDescription" name="description" maxlength="1000" rows="3"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Category -->
+                        <div class="form-section">
+                            <h3>Category</h3>
+                            <div class="form-group">
+                                <label for="itemCategory">Category *</label>
+                                <select id="itemCategory" name="categoryId" required onchange="loadSubCategoriesForCategory()">
+                                    <option value="">Select Category</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="itemSubCategory">SubCategory</label>
+                                <select id="itemSubCategory" name="subCategoryId">
+                                    <option value="">None</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Pricing -->
+                        <div class="form-section">
+                            <h3>Pricing</h3>
+                            <div class="form-group">
+                                <label for="itemPrice">Selling Price *</label>
+                                <input type="number" id="itemPrice" name="price" required step="0.01" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="itemCostPrice">Cost Price</label>
+                                <input type="number" id="itemCostPrice" name="costPrice" step="0.01" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="itemUnit">Unit of Sale *</label>
+                                <select id="itemUnit" name="unitOfSale" required>
+                                    <option value="1">Piece</option>
+                                    <option value="2">Kilogram</option>
+                                    <option value="3">Gram</option>
+                                    <option value="4">Liter</option>
+                                    <option value="5">Milliliter</option>
+                                    <option value="6">Meter</option>
+                                    <option value="7">Box</option>
+                                    <option value="8">Pack</option>
+                                    <option value="9">Carton</option>
+                                    <option value="10">Dozen</option>
+                                    <option value="11">Set</option>
+                                    <option value="12">Pair</option>
+                                    <option value="13">Bundle</option>
+                                    <option value="14">Roll</option>
+                                    <option value="15">Sheet</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Inventory -->
+                        <div class="form-section">
+                            <h3>Inventory</h3>
+                            <div class="form-group">
+                                <label for="itemQuantity">Quantity in Stock *</label>
+                                <input type="number" id="itemQuantity" name="quantityInStock" required min="0" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="itemMinStock">Minimum Stock Level</label>
+                                <input type="number" id="itemMinStock" name="minimumStockLevel" min="0" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="itemMaxStock">Maximum Stock Level</label>
+                                <input type="number" id="itemMaxStock" name="maximumStockLevel" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="itemReorder">Reorder Point</label>
+                                <input type="number" id="itemReorder" name="reorderPoint" min="0" value="0">
+                            </div>
+                        </div>
+
+                        <!-- Product Details -->
+                        <div class="form-section">
+                            <h3>Product Details</h3>
+                            <div class="form-group">
+                                <label for="itemBarcode">Barcode</label>
+                                <input type="text" id="itemBarcode" name="barcode" maxlength="200">
+                            </div>
+                            <div class="form-group">
+                                <label for="itemBrand">Brand</label>
+                                <input type="text" id="itemBrand" name="brand" maxlength="200">
+                            </div>
+                            <div class="form-group">
+                                <label for="itemSupplier">Supplier</label>
+                                <input type="text" id="itemSupplier" name="supplier" maxlength="200">
+                            </div>
+                            <div class="form-group">
+                                <label for="itemWeight">Weight (kg)</label>
+                                <input type="number" id="itemWeight" name="weight" step="0.01" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="itemDimensions">Dimensions</label>
+                                <input type="text" id="itemDimensions" name="dimensions" maxlength="100" placeholder="e.g., 10x20x30 cm">
+                            </div>
+                            <div class="form-group">
+                                <label for="itemExpiry">Expiry Date</label>
+                                <input type="date" id="itemExpiry" name="expiryDate">
+                            </div>
+                            <div class="form-group">
+                                <label for="itemLocation">Location</label>
+                                <input type="text" id="itemLocation" name="location" maxlength="200" placeholder="e.g., A-12-3">
+                            </div>
+                            <div class="form-group">
+                                <label for="itemImage">Image URL</label>
+                                <input type="url" id="itemImage" name="imageUrl" maxlength="500">
+                            </div>
+                        </div>
+
+                        <!-- Additional Info -->
+                        <div class="form-section full-width">
+                            <h3>Additional Information</h3>
+                            <div class="form-group">
+                                <label for="itemNotes">Notes</label>
+                                <textarea id="itemNotes" name="notes" maxlength="1000" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="itemActive" name="isActive" checked>
+                                    <span class="checkmark"></span>
+                                    Active Item
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-save"></i>
+                        Save Item
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal" id="deleteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Delete Item</h2>
+                <button class="close-btn" onclick="closeDeleteModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="delete-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Are you sure you want to delete this item?</p>
+                    <p class="category-name" id="deleteItemName"></p>
+                    <p class="warning-text">This action cannot be undone.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">
+                    <i class="fas fa-trash"></i>
+                    Delete Item
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/items.js"></script>
+</body>
+</html>

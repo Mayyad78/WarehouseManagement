@@ -68,6 +68,31 @@ namespace WarehouseManagement.Data
                 entity.HasIndex(e => e.Username).IsUnique();
                 entity.HasIndex(e => e.Email).IsUnique();
             });
+            
+            // Configure Item entity
+            modelBuilder.Entity<Item>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.SKU).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.CreatedAt).IsRequired();
+                entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+    
+                // Add unique index on SKU
+                entity.HasIndex(e => e.SKU).IsUnique();
+    
+                // Configure relationship with Category
+                entity.HasOne(e => e.Category)
+                    .WithMany()
+                    .HasForeignKey(e => e.CategoryId)
+                    .OnDelete(DeleteBehavior.Restrict);
+    
+                // Configure relationship with SubCategory
+                entity.HasOne(e => e.SubCategory)
+                    .WithMany()
+                    .HasForeignKey(e => e.SubCategoryId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
 
             // Seed some initial data
             modelBuilder.Entity<Category>().HasData(
